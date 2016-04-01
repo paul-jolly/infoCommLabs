@@ -1,6 +1,7 @@
 %% Lab 1
 % Collaborators: Jerry H. and Paul J.
 clear
+close all
 %% Part 1: PRN code offset
 load('data1.mat');
 % Definitions and constants
@@ -16,14 +17,14 @@ sv3Code = gold_codes(3,:);
 
 % Extending gold codes to match samples per chip
 % (Repeating each chip n times)
-n = ceil(chipSamp); % Samples per chip
-sv1CodeSamp = repmat(sv1Code,n,1);
+t = ceil(chipSamp); % Samples per chip
+sv1CodeSamp = repmat(sv1Code,t,1);
 sv1CodeSamp = sv1CodeSamp(:);
 
-sv2CodeSamp = repmat(sv2Code,n,1);
+sv2CodeSamp = repmat(sv2Code,t,1);
 sv2CodeSamp = sv2CodeSamp(:);
 
-sv3CodeSamp = repmat(sv3Code,n,1);
+sv3CodeSamp = repmat(sv3Code,t,1);
 sv3CodeSamp = sv3CodeSamp(:);
 
 % Correlating data1 with each satellite code
@@ -65,5 +66,40 @@ display('b) number of samples/chip = 15.996');
 fprintf('c) The matching satellite is SV%d\n',sv);
 fprintf('d) phase offset = %d\n',round(phaseOffset));
 
+%% Part 2: Carrier Frequency Modulation
+load('data2.mat');
+fif = 4.1304e6;
+L = length(data2);
+f = fs*(0:(L/2))/L;
 
+figure
+DATA = fftshift(fft(data2));
+% P2 = abs(DATA/L);
+% P1 = P2(1:L/2+1);
+% P1(2:end-1) = 2*P1(2:end-1);
+plot(real(DATA));
+% plot(f,P1)
 
+t = (0:length(data2)-1)/fs;
+
+xif = cos(-2*pi*fif*t+pi/3);
+
+x_bb = data2.*xif;
+
+figure
+X_bb = fftshift(fft(x_bb));
+% P2 = abs(X_bb/L);
+% P1 = P2(1:L/2+1);
+% P1(2:end-1) = 2*P1(2:end-1);
+% plot(f,P1)
+X_bb(1:7149) = zeros(1,7149);
+X_bb(9219:end) = zeros(1,7149);
+plot(real(X_bb))
+
+% plot(x_bb);
+
+x_bb1 = ifft(X_bb);
+
+plot(real(x_bb1))
+
+%8184, 9219, 7149
