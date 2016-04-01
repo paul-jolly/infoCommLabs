@@ -53,15 +53,17 @@ else
 end
 
 % Finding offset
-[max,phaseOffset] = max(r);
+[~,sampleOffset] = max(r);
+lagdiff = lags(sampleOffset);
+chipDelay = lagdiff/chipSamp;   % Convert to chip
+phaseOffset = 1023 + chipDelay; % Delay in next code cycle
 
-dataCorrect = data1(phaseOffset:end);
-
+% Display answers
 display('Part 1: PRN code offset')
 display('a) chip rate = 1.023 MHz');
 display('b) number of samples/chip = 15.996');
 fprintf('c) The matching satellite is SV%d\n',sv);
-fprintf('d) phase offset = %d\n',phaseOffset);
+fprintf('d) phase offset = %d\n',round(phaseOffset));
 
 
 
