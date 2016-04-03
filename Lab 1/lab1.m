@@ -163,6 +163,241 @@ t = (0:length(samples)-1)/fs;
 xif = (cos(2*pi*fif*t+5*pi/4))';
 x_bb = samples.*xif;
 
-% Correlating data1 with each satellite code
+% % Correlating data1 with each satellite code
+% for i = 1 : length(x_bb)
+%     r10(i) = correlate(x_bb, sv4CodeSamp, i);
+% end
+
 [r4,lags4] = xcorr(x_bb,sv4CodeSamp);
 [r5,lags5] = xcorr(x_bb,sv5CodeSamp);
+
+%%
+fif = 4.131899e6;
+
+figure
+plot(samples)
+
+% Extracting gold codes for SV4 and SV5
+sv10Code = gold_codes(10,:);
+sv11Code = gold_codes(11,:);
+
+% Extending gold codes to match samples per chip
+% (Repeating each chip n times)
+t = ceil(chipSamp); % Samples per chip
+sv10CodeSamp = repelem(sv10Code,t);
+sv10CodeSamp = repmat(sv10CodeSamp,1,5);
+sv11CodeSamp = repelem(sv11Code,t);
+sv11CodeSamp = repmat(sv11CodeSamp,1,5);
+
+close all
+
+% Demodulate signal
+t = (0:length(samples)-1)/fs;
+xif_i = (cos(2*pi*fif*t+5*pi/4))';
+xif_q = (sin(2*pi*fif*t+5*pi/4))';
+x_bbi = samples.*xif_i;
+x_bbq = samples.*xif_q;
+
+% % Correlating data1 with each satellite code
+% for i = 1 : length(x_bb)
+%     r10(i) = correlate(x_bb, sv4CodeSamp, i);
+% end
+
+% Find I, Q parts
+[r10i,lags10i] = xcorr(x_bbi,sv10CodeSamp);
+[r10q,lags10q] = xcorr(x_bbq,sv10CodeSamp);
+[r11i,lags11i] = xcorr(x_bbi,sv11CodeSamp);
+[r11q,lags11q] = xcorr(x_bbq,sv11CodeSamp);
+r10_iq = sqrt(r10i.^2 + r10q.^2);
+r11_iq = sqrt(r11i.^2 + r11q.^2);
+
+% x_bb = sqrt(x_bbi.^2 + x_bbq.^2);
+% [r10,lags10] = xcorr(x_bb,sv10CodeSamp);
+% [r11,lags11] = xcorr(x_bb,sv11CodeSamp);
+% 
+
+% figure
+% subplot(2,2,1)
+% plot(r10i)
+% title('r10i')
+% subplot(2,2,2)
+% plot(r10q)
+% title('r10q')
+% subplot(2,2,3)
+% plot(r11i)
+% title('r11i')
+% subplot(2,2,4)
+% plot(r11q)
+% title('r11q')
+
+% figure
+% subplot(2,1,1)
+% plot(r10)
+% title('r10')
+% subplot(2,1,2)
+% plot(r11)
+% title('r11')
+
+% figure
+% subplot(2,1,1)
+% plot(r10_iq)
+% title('r10_{iq}')
+% subplot(2,1,2)
+% plot(r11_iq)
+% title('r11_{iq}')
+
+%Choosing correct satellite
+if (max(r10_iq)>max(r11_iq))
+        r = r10_iq;
+        lags = lags10i;
+        sv = 10;
+else
+        r = r11_iq;
+        lags = lags11i;
+        sv = 11;
+end
+
+% Finding offset
+[~,sampleOffset] = max(r);
+lagdiff = lags(sampleOffset);
+chipDelay = lagdiff/chipSamp;   % Convert to chip
+phaseOffset = chipDelay-1023; % Delay in next code cycle
+% 
+% Display answers
+display('Part 2: Carrier Frequency Modulation')
+fprintf('6) The matching satellite is SV%d\n',sv);
+display('7) phase offset = 25.8381/1048.8381');
+
+%% Part 5
+%%
+fif = 4.131899e6;
+
+figure
+plot(samples)
+
+% Extracting gold codes for SV4 and SV5
+sv12Code = gold_codes(12,:);
+sv13Code = gold_codes(13,:);
+
+% Extending gold codes to match samples per chip
+% (Repeating each chip n times)
+t = ceil(chipSamp); % Samples per chip
+sv12CodeSamp = repelem(sv12Code,t);
+sv12CodeSamp = repmat(sv12CodeSamp,1,5);
+sv13CodeSamp = repelem(sv13Code,t);
+sv13CodeSamp = repmat(sv13CodeSamp,1,5);
+
+close all
+
+%Search all Doppler bins
+doppler_bin = 500e3;
+for i = 1:4
+    % Demodulate signal
+    t = (0:length(samples)-1)/fs;
+    xif_i = (cos(2*pi*(fif-i*doppler_bin)*t+5*pi/4))';
+    xif_q = (sin(2*pi*(fif-i*doppler_bin)*t+5*pi/4))';
+    x_bbi = samples.*xif_i;
+    x_bbq = samples.*xif_q;
+    
+    % Find I, Q parts
+    [r12i,lags12i] = xcorr(x_bbi,sv12CodeSamp);
+    [r12q,lags12q] = xcorr(x_bbq,sv12CodeSamp);
+    [r13i,lags13i] = xcorr(x_bbi,sv13CodeSamp);
+    [r13q,lags13q] = xcorr(x_bbq,sv13CodeSamp);
+    r12_iq = sqrt(r12i.^2 + r12q.^2);
+    r13_iq = sqrt(r13i.^2 + r13q.^2);
+
+    % x_bb = sqrt(x_bbi.^2 + x_bbq.^2);
+    % [r12,lags12] = xcorr(x_bb,sv12CodeSamp);
+    % [r13,lags13] = xcorr(x_bb,sv13CodeSamp);
+    % 
+    figure
+    subplot(2,2,1)
+    plot(r12i)
+    title('r12i')
+    subplot(2,2,2)
+    plot(r12q)
+    title('r12q')
+    subplot(2,2,3)
+    plot(r13i)
+    title('r13i')
+    subplot(2,2,4)
+    plot(r13q)
+    title('r13q')
+
+    figure
+    subplot(2,1,1)
+    plot(r12_iq)
+    title('r12_{iq}')
+    subplot(2,1,2)
+    plot(r13_iq)
+    title('r13_{iq}')
+end
+
+% % Correlating data1 with each satellite code
+% for i = 1 : length(x_bb)
+%     r10(i) = correlate(x_bb, sv4CodeSamp, i);
+% end
+
+% Find I, Q parts
+[r10i,lags10i] = xcorr(x_bbi,sv10CodeSamp);
+[r10q,lags10q] = xcorr(x_bbq,sv10CodeSamp);
+[r11i,lags11i] = xcorr(x_bbi,sv11CodeSamp);
+[r11q,lags11q] = xcorr(x_bbq,sv11CodeSamp);
+r10_iq = sqrt(r10i.^2 + r10q.^2);
+r11_iq = sqrt(r11i.^2 + r11q.^2);
+
+% x_bb = sqrt(x_bbi.^2 + x_bbq.^2);
+% [r10,lags10] = xcorr(x_bb,sv10CodeSamp);
+% [r11,lags11] = xcorr(x_bb,sv11CodeSamp);
+% 
+figure
+subplot(2,2,1)
+plot(r10i)
+title('r10i')
+subplot(2,2,2)
+plot(r10q)
+title('r10q')
+subplot(2,2,3)
+plot(r11i)
+title('r11i')
+subplot(2,2,4)
+plot(r11q)
+title('r11q')
+
+% figure
+% subplot(2,1,1)
+% plot(r10)
+% title('r10')
+% subplot(2,1,2)
+% plot(r11)
+% title('r11')
+figure
+subplot(2,1,1)
+plot(r10_iq)
+title('r10_{iq}')
+subplot(2,1,2)
+plot(r11_iq)
+title('r11_{iq}')
+
+%Choosing correct satellite
+if (max(r10_iq)>max(r11_iq))
+        r = r10_iq;
+        lags = lags10i;
+        sv = 10;
+else
+        r = r11_iq;
+        lags = lags11i;
+        sv = 11;
+end
+
+% Finding offset
+[~,sampleOffset] = max(r);
+lagdiff = lags(sampleOffset);
+chipDelay = lagdiff/chipSamp;   % Convert to chip
+phaseOffset = chipDelay-1023; % Delay in next code cycle
+% 
+% Display answers
+display('Part 2: Carrier Frequency Modulation')
+fprintf('6) The matching satellite is SV%d\n',sv);
+display('7) phase offset = 25.8381/1048.8381');
