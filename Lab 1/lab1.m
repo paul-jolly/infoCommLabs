@@ -66,6 +66,7 @@ display('1) chip rate = 1.023 MHz');
 display('2) number of samples/chip = 15.996');
 fprintf('3) The matching satellite is SV%d\n',sv);
 fprintf('4) phase offset = %d\n',round(phaseOffset));
+display('****************************************************************');
 
 %% Part 2: Carrier Frequency Modulation
 load('data2.mat');
@@ -148,9 +149,16 @@ end
 
 % Display answers
 display('Part 2: Carrier Frequency Modulation')
-display('5) The first 4 chips of the signal are 0111');
+display('5) In the data before demodulation (plots below), we can see that there are a lot of');
+display('high frequency parts where the data is not discernable. You can see');
+display('aspects that look like phase shifts at different points.');
+display('In the data after demodulation, you can see the highs and lows much');
+display('more signficantly, but you can still see some high frequency spots');
+display('as the signal still has not been sent through an LPF.');
+display('The first 4 chips of the signal are 0111');
 fprintf('6) The matching satellite is SV%d\n',sv);
 display('7) phase offset = 807.5');
+display('****************************************************************');
 
 %% Part 3: GPS satellite acquisition with known carrier frequency and phase
 load('TrimbleDataSet.mat')
@@ -159,8 +167,8 @@ load('TrimbleDataSet.mat')
 fif = 4.12891e6;
 
 % Plotting incoming data for inspection
-figure
-plot(samples)
+% figure
+% plot(samples)
 
 % Extracting gold codes for SV4 and SV5
 sv4Code = gold_codes(4,:);
@@ -201,7 +209,7 @@ end
 lagdiff = lags(sampleOffset);
 chipDelay = lagdiff/chipSamp;   % Convert to chip
 if chipDelay < 1023             % Choose correct delay
-    phaseOffset = 1023 - abs(chipDelay);
+    phaseOffset = 5*1023 - abs(chipDelay);
 else
     phaseOffset = chipDelay;
 end
@@ -214,6 +222,7 @@ display('a long enough correlation. This allows us to identify the signal,');
 display('and find the correct phase offset in the noise.');
 fprintf('10) The matching satellite is SV%d\n',sv);
 display('11) phase offset = 2327.5');
+display('****************************************************************');
 
 %% Part 4: GPS satellite acquisition with known carrier frequency
 % Definitions and constants
@@ -266,7 +275,7 @@ end
 lagdiff = lags(sampleOffset);
 chipDelay = lagdiff/chipSamp;   % Convert to chip
 if chipDelay < 1023             % Choose correct delay
-    phaseOffset = 1023 - abs(chipDelay);
+    phaseOffset = 5*1023 - abs(chipDelay);
 else
     phaseOffset = chipDelay;
 end
@@ -279,13 +288,11 @@ display('14) When run the code from Part 3, we can still identify the satellite.
 display('However, the calculated phase offset is incorrect. By doing');
 display('quadrature demodulation, we can calculate the correct phase offset');
 display('regardless of the actual incoming phase offset.');
+display('****************************************************************');
 
 %% Part 5: Realistic GPS satellite acquisition
 % Definitions and constants
-nominalfif = 4.1304;
-
-figure
-plot(samples)
+fif = 4.1304e6; % Nominal fif
 
 % Extracting gold codes for SV4 and SV5
 sv12Code = gold_codes(12,:);
@@ -296,18 +303,19 @@ sv13Code = gold_codes(13,:);
 t = ceil(chipSamp); % Samples per chip
 sv12CodeSamp = repelem(sv12Code,t);
 sv12CodeSamp = repmat(sv12CodeSamp,1,5);
+sv12CodeSamp = 2*sv12CodeSamp-1;
 sv13CodeSamp = repelem(sv13Code,t);
 sv13CodeSamp = repmat(sv13CodeSamp,1,5);
-
-close all
+sv13CodeSamp = 2*sv13CodeSamp-1;
 
 %Search all Doppler bins
-doppler_bin = 500e3;
-for i = 1:4
-    % Demodulate signal
+doppler_bin = 500;
+maxVal = -inf;
+for i = -4:4
+    % Demodulate signal using bin i
     t = (0:length(samples)-1)/fs;
-    xif_i = (cos(2*pi*(fif-i*doppler_bin)*t+5*pi/4))';
-    xif_q = (sin(2*pi*(fif-i*doppler_bin)*t+5*pi/4))';
+    xif_i = (cos(2*pi*(fif+i*doppler_bin)*t))';
+    xif_q = (sin(2*pi*(fif+i*doppler_bin)*t))';
     x_bbi = samples.*xif_i;
     x_bbq = samples.*xif_q;
     
@@ -318,98 +326,56 @@ for i = 1:4
     [r13q,lags13q] = xcorr(x_bbq,sv13CodeSamp);
     r12_iq = sqrt(r12i.^2 + r12q.^2);
     r13_iq = sqrt(r13i.^2 + r13q.^2);
-
-    % x_bb = sqrt(x_bbi.^2 + x_bbq.^2);
-    % [r12,lags12] = xcorr(x_bb,sv12CodeSamp);
-    % [r13,lags13] = xcorr(x_bb,sv13CodeSamp);
-    % 
-    figure
-    subplot(2,2,1)
-    plot(r12i)
-    title('r12i')
-    subplot(2,2,2)
-    plot(r12q)
-    title('r12q')
-    subplot(2,2,3)
-    plot(r13i)
-    title('r13i')
-    subplot(2,2,4)
-    plot(r13q)
-    title('r13q')
-
-    figure
-    subplot(2,1,1)
-    plot(r12_iq)
-    title('r12_{iq}')
-    subplot(2,1,2)
-    plot(r13_iq)
-    title('r13_{iq}')
-end
-
-% % Correlating data1 with each satellite code
-% for i = 1 : length(x_bb)
-%     r10(i) = correlate(x_bb, sv4CodeSamp, i);
-% end
-
-% Find I, Q parts
-[r10i,lags10i] = xcorr(x_bbi,sv10CodeSamp);
-[r10q,lags10q] = xcorr(x_bbq,sv10CodeSamp);
-[r11i,lags11i] = xcorr(x_bbi,sv11CodeSamp);
-[r11q,lags11q] = xcorr(x_bbq,sv11CodeSamp);
-r10_iq = sqrt(r10i.^2 + r10q.^2);
-r11_iq = sqrt(r11i.^2 + r11q.^2);
-
-% x_bb = sqrt(x_bbi.^2 + x_bbq.^2);
-% [r10,lags10] = xcorr(x_bb,sv10CodeSamp);
-% [r11,lags11] = xcorr(x_bb,sv11CodeSamp);
-% 
-figure
-subplot(2,2,1)
-plot(r10i)
-title('r10i')
-subplot(2,2,2)
-plot(r10q)
-title('r10q')
-subplot(2,2,3)
-plot(r11i)
-title('r11i')
-subplot(2,2,4)
-plot(r11q)
-title('r11q')
-
-% figure
-% subplot(2,1,1)
-% plot(r10)
-% title('r10')
-% subplot(2,1,2)
-% plot(r11)
-% title('r11')
-figure
-subplot(2,1,1)
-plot(r10_iq)
-title('r10_{iq}')
-subplot(2,1,2)
-plot(r11_iq)
-title('r11_{iq}')
-
-%Choosing correct satellite
-if (max(r10_iq)>max(r11_iq))
-        r = r10_iq;
-        lags = lags10i;
-        sv = 10;
-else
-        r = r11_iq;
-        lags = lags11i;
-        sv = 11;
+    
+    % Keep track of max index
+    currMax12 = max(r12_iq);
+    currMax13 = max(r13_iq);
+    if currMax12 > currMax13
+        currMax = currMax12;
+        svtmp = 12;
+        rtmp = r12_iq;
+        lagtmp = lags12i;
+    else
+        currMax = currMax13;
+        svtmp = 13;
+        rtmp = r13_iq;
+        lagtmp = lags13i;
+    end
+    
+    if currMax > maxVal
+        maxVal = currMax;
+        maxInd = i;
+        sv = svtmp;
+        r = rtmp;
+        lags = lagtmp;
+    end
 end
 
 % Finding offset
 [~,sampleOffset] = max(r);
 lagdiff = lags(sampleOffset);
 chipDelay = lagdiff/chipSamp;   % Convert to chip
-phaseOffset = chipDelay-1023; % Delay in next code cycle
-% 
+if chipDelay < 1023             % Choose correct delay
+    phaseOffset = 5*1023 - abs(chipDelay);
+else
+    phaseOffset = chipDelay;
+end
+
+% Calculate actual IF
+actualIF = fif+maxInd*doppler_bin;
+
+% Calculate program run time for 32 satellites and +/- 5KHz doppler shift
+% (given run time of this program is about 0.89 seconds)
+runTime32 = 0.89*12/9; % Accounting for increase search range (+/-5KHz)
+runTime32 = 16*runTime32;        % Accounting for increased satelltes (32)
+
+
 % Display answers
-display('Part 2: Carrier Frequency Modulation')
-fprintf('6) The matching satellite is SV%d\n',sv);
-display('7) phase offset = 25.8381/1048.8381');
+display('Part 5: Realistic GPS satellite acquisition')
+fprintf('15) The matching satellite is SV%d\n',sv);
+display('16) phase offset = 3540.5 chips');
+display('17) The actual IF carrer is 4.1295 MHz (nearest 500 Hz)');
+display('18) This program takes about 0.89s to identify correct satellite');
+display('19) For 32 satellites and +/-5KHz, total run time is about 19 seconds.');
+display('****************************************************************');
+
