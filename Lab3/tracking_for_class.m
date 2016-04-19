@@ -1,4 +1,4 @@
-function [trackResults]= tracking
+function [trackResults]= tracking_for_class
 % Performs code and carrier tracking
 %
 %[trackResults] = tracking
@@ -55,7 +55,7 @@ earlyLateSpc = .5;
         oldCodeFreq = codeFreq;
         oldCarrFreq = carrFreq;
         
-        fid = fopen('/Users/harris/Documents/Classes/E168b/E156/Charlie/TrimbleDataSet2/TrimbleDataSet2.bin');
+        fid = fopen('TrimbleDataSet.mat');
         
         fseek(fid, ...
               sampleNum, ...
